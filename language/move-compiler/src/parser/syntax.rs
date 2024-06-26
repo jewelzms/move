@@ -602,6 +602,7 @@ fn parse_attributes(context: &mut Context) -> Result<Vec<Attributes>, Box<Diagno
             attributes_,
         ))
     }
+    // println!("parse_attributes attributes_vec:{:?}", attributes_vec);
     Ok(attributes_vec)
 }
 
@@ -1882,6 +1883,8 @@ fn parse_function_decl(
         native,
     } = modifiers;
 
+    // println!("modifiers.entry:{:?}", &modifiers.entry);
+    // println!("modifiers.native:{:?}", &modifiers.native);
     if let Some(Visibility::Script(vloc)) = visibility {
         let msg = format!(
             "'{script}' is deprecated in favor of the '{entry}' modifier. \
@@ -2434,7 +2437,12 @@ fn parse_module(
         is_spec_module,
         members,
     };
-
+    // println!("parse_module def: {:?}", &def);
+    // println!("parse_module loc: {:?}", &loc);
+    // println!("parse_module address: {:?}", &address);
+    // println!("parse_module name: {:?}", &name);
+    // println!("parse_module is_spec_module: {:?}", &is_spec_module);
+    // println!("parse_module members: {:?}", &members);
     Ok(def)
 }
 
@@ -3208,12 +3216,14 @@ fn parse_file(context: &mut Context) -> Result<Vec<Definition>, Box<Diagnostic>>
     let mut defs = vec![];
     while context.tokens.peek() != Tok::EOF {
         let attributes = parse_attributes(context)?;
+        // println!("parse_attributes attributes: {:?}", &attributes);
         defs.push(match context.tokens.peek() {
             Tok::Spec | Tok::Module => Definition::Module(parse_module(attributes, context)?),
             Tok::Script => Definition::Script(parse_script(attributes, context)?),
             _ => Definition::Address(parse_address_block(attributes, context)?),
         })
     }
+    //println!("parse_attributes defs: {:?}", &defs);
     Ok(defs)
 }
 

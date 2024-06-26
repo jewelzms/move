@@ -63,6 +63,7 @@ move run` must be applied to a module inside `storage/`",
             .scripts()
             .find(|unit| unit.unit.source_map().check(&file_contents));
         // script source file; package is already compiled so load it up
+        // println!("=======    script_opt:{:?}", script_opt);
         match script_opt {
             Some(unit) => unit.unit.serialize(bytecode_version),
             None => bail!("Unable to find script in file {:?}", script_path),
@@ -79,6 +80,14 @@ move run` must be applied to a module inside `storage/`",
     let vm = MoveVM::new(natives).unwrap();
     let mut gas_status = get_gas_status(cost_table, gas_budget)?;
     let mut session = vm.new_session(state);
+    println!("=======VM      txn_args:{:?}", txn_args);
+    println!("=======VM       vm_args:{:?}", vm_args);
+    println!("=======VM  vm_type_args:{:?}", vm_type_args);
+    println!("=======VM    cost_table:{:?}", cost_table);
+    println!("=======VM    gas_budget:{:?}", gas_budget);
+    println!("=======VM         state:{:?}", state);
+    println!("=======VM bytecode_size:{:?}", bytecode.len());
+    println!("=======VM      bytecode:{:?}", bytecode);
 
     let script_type_parameters = vec![];
     let script_parameters = vec![];
@@ -95,23 +104,34 @@ move run` must be applied to a module inside `storage/`",
     let res = match script_name_opt {
         Some(script_name) => {
             // script fun. parse module, extract script ID to pass to VM
+            println!(
+                "=======session.execute_entry_function script_name:{:?}",
+                script_name
+            );
+            let ident = IdentStr::new(script_name).unwrap().to_owned();
             let module = CompiledModule::deserialize(&bytecode)
                 .map_err(|e| anyhow!("Error deserializing module: {:?}", e))?;
+            show_tx_by_module_function(&module.self_id(), &ident, &vm_type_args, &vm_args);
             session.execute_entry_function(
                 &module.self_id(),
-                IdentStr::new(script_name)?,
+                ident.as_ident_str(),
                 vm_type_args.clone(),
                 vm_args,
                 &mut gas_status,
             )
         }
-        None => session.execute_script(
-            bytecode.to_vec(),
-            vm_type_args.clone(),
-            vm_args,
-            &mut gas_status,
-        ),
+        None => {
+            println!("=======session.execute_script");
+            show_tx_by_script(&bytecode, &vm_type_args, &vm_args);
+            session.execute_script(
+                bytecode.to_vec(),
+                vm_type_args.clone(),
+                vm_args,
+                &mut gas_status,
+            )
+        }
     };
+    println!("<<<< ---- execute result ---- >>>>\n-----------------------------------------------------------------------------------\n{:?}", &res);
 
     if let Err(err) = res {
         explain_execution_error(
@@ -131,4 +151,56 @@ move run` must be applied to a module inside `storage/`",
         }
         maybe_commit_effects(!dry_run, changeset, events, state)
     }
+}
+
+fn show_tx_by_script(bytecode: &Vec<u8>, vm_type_args: &Vec<TypeTag>, vm_args: &Vec<Vec<u8>>) {
+    #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+    struct MyScript {
+        code: Vec<u8>,
+        types: Vec<TypeTag>,
+        args: Vec<Vec<u8>>,
+    }
+    let ms = MyScript {
+        code: bytecode.clone(),
+        types: vm_type_args.clone(),
+        args: vm_args.clone(),
+    };
+
+    //use crate::language_storage::{ModuleId, TypeTag};
+    use serde::{Deserialize, Serialize};
+    let bys = bcs::to_bytes(&ms);
+    println!("The transaction data\n{:?}", &bys);
+}
+
+use move_core_types::identifier::Identifier;
+use move_core_types::language_storage::ModuleId;
+// use move_core_types::language_storage::TypeTag;
+fn show_tx_by_module_function(
+    modeule_id: &ModuleId,
+    ident: &Identifier,
+    vm_type_args: &Vec<TypeTag>,
+    vm_args: &Vec<Vec<u8>>,
+) {
+    #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+    struct MyScriptFunction {
+        module_id: ModuleId,
+        ident: Identifier,
+        types: Vec<TypeTag>,
+        args: Vec<Vec<u8>>,
+    }
+    #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+    enum MyTransactionPayload {
+        MyFunction(MyScriptFunction),
+    }
+    let ms = MyTransactionPayload::MyFunction(MyScriptFunction {
+        module_id: modeule_id.clone(),
+        ident: ident.clone(),
+        types: vm_type_args.clone(),
+        args: vm_args.clone(),
+    });
+
+    //use crate::language_storage::{ModuleId, TypeTag};
+    use serde::{Deserialize, Serialize};
+    let bys = bcs::to_bytes(&ms);
+    println!("The transaction data\n{:?}", &bys);
 }

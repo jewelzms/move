@@ -22,7 +22,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-#[derive(Parser)]
+#[derive(Parser, Debug)]
 pub enum SandboxCommand {
     /// Compile the modules in this package and its dependencies and publish the resulting bytecodes in global storage.
     #[clap(name = "publish")]
@@ -144,7 +144,7 @@ pub enum SandboxCommand {
     },
 }
 
-#[derive(Parser)]
+#[derive(Parser, Debug)]
 pub enum GenerateCommand {
     /// Generate struct layout bindings for the modules stored on disk under `storage-dir`.
     #[clap(name = "struct-layouts")]
@@ -158,7 +158,7 @@ pub enum GenerateCommand {
         options: StructLayoutOptions,
     },
 }
-#[derive(Parser)]
+#[derive(Parser, Debug)]
 pub struct StructLayoutOptions {
     /// Generate layout bindings for this struct.
     #[clap(long = "struct")]
@@ -204,6 +204,8 @@ impl SandboxCommand {
         storage_dir: &Path,
     ) -> Result<()> {
         let bytecode_version = None;
+        println!("++++++++++++++++++++++++++++++++++ [handle_command] SandboxCommand:{:?},package_path:{:?},build_config:{:?},bytecode_version:{:?},storage_dir:{:?}",
+            &self, &move_args.package_path, &move_args.build_config, &bytecode_version, &storage_dir);
         match self {
             SandboxCommand::Publish {
                 no_republish,
@@ -238,8 +240,20 @@ impl SandboxCommand {
                 gas_budget,
                 dry_run,
             } => {
+                println!("           script_file:{:?}", script_file);
+                println!("           script_name:{:?}", script_name);
+                println!("               signers:{:?}", signers);
+                println!("                  args:{:?}", args);
+                println!("             type_args:{:?}", type_args);
+                println!("            gas_budget:{:?}", gas_budget);
+                println!("               dry_run:{:?}", dry_run);
+                println!("move_args.package_path:{:?}", move_args.package_path);
+                println!("move_args.build_config:{:?}", move_args.build_config);
+                println!("      bytecode_version:{:?}", bytecode_version);
+                println!("           storage_dir:{:?}", storage_dir);
                 let context =
                     PackageContext::new(&move_args.package_path, &move_args.build_config)?;
+                // println!("               context:{:?}", &context);
                 let state = context.prepare_state(bytecode_version, storage_dir)?;
                 sandbox::commands::run(
                     natives,

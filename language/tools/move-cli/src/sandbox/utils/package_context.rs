@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 
 /// The PackageContext controls the package that the CLI is executing with respect to, and handles the
 /// creation of the `OnDiskStateView` with the package's dependencies.
+#[derive(Debug)]
 pub struct PackageContext {
     package: CompiledPackage,
     build_dir: PathBuf,

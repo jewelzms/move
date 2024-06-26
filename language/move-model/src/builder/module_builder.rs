@@ -421,6 +421,7 @@ impl<'env, 'translator> ModuleBuilder<'env, 'translator> {
         let params = et.analyze_and_add_params(&def.signature.parameters, true);
         let result_type = et.translate_type(&def.signature.return_type);
         let is_entry = def.entry.is_some();
+        // println!("+++++++++ decl_ana_fun +++++++++ is_entry:{}", is_entry);
         let visibility = match def.visibility {
             EA::Visibility::Public(_) => FunctionVisibility::Public,
             EA::Visibility::Friend(_) => FunctionVisibility::Friend,

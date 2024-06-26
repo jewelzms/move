@@ -401,6 +401,7 @@ pub fn compile_module<'a>(
 ) -> Result<(CompiledModule, SourceMap)> {
     verify_module(&module)?;
 
+    // println!("compile_module<'a> ++++++++++++ module.functions{:?}", &module.functions);
     let current_module = module.identifier;
     let mut context = Context::new(module.loc, HashMap::new(), Some(current_module))?;
     for dep in dependencies {
@@ -849,6 +850,7 @@ fn compile_function(
     let ast_function = ast_function.value;
 
     let is_entry = ast_function.is_entry;
+    // println!("+++++++++ compile_function +++++++++ is_entry:{}", is_entry);
     let visibility = match ast_function.visibility {
         FunctionVisibility::Public => Visibility::Public,
         FunctionVisibility::Friend => Visibility::Friend,

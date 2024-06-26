@@ -22,6 +22,7 @@ use move_disassembler::disassembler::Disassembler;
 use move_ir_types::location::Spanned;
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnnotator};
 use std::{
+    borrow::BorrowMut,
     convert::{TryFrom, TryInto},
     fs,
     path::{Path, PathBuf},
@@ -58,6 +59,10 @@ impl OnDiskStateView {
             fs::create_dir_all(&storage_dir)?;
         }
 
+        println!(
+            "++++++++++++++++++++++++++++++++++ [create] build_dir:{:?}, storage_dir:{:?}",
+            &build_dir, &storage_dir
+        );
         Ok(Self {
             build_dir,
             // it is important to canonicalize the path here because `is_data_path()` relies on the
@@ -67,6 +72,10 @@ impl OnDiskStateView {
     }
 
     pub fn build_dir(&self) -> &PathBuf {
+        println!(
+            "++++++++++++++++++++++++++++++++++ [build_dir] build_dir:{:?}",
+            &self.build_dir
+        );
         &self.build_dir
     }
 
@@ -105,6 +114,10 @@ impl OnDiskStateView {
     }
 
     fn get_resource_path(&self, addr: AccountAddress, tag: StructTag) -> PathBuf {
+        println!(
+            "++++++++++++++++++++++++++++++++++ [get_resource_path] addr:{:?}, tag:{:?}",
+            &addr, &tag
+        );
         let mut path = self.get_addr_path(&addr);
         path.push(RESOURCES_DIR);
         path.push(StructID(tag).to_string());
@@ -113,6 +126,10 @@ impl OnDiskStateView {
 
     // Events are stored under address/handle creation number
     fn get_event_path(&self, key: &[u8]) -> PathBuf {
+        println!(
+            "++++++++++++++++++++++++++++++++++ [get_event_path] key:{:?}",
+            &key
+        );
         // TODO: this is a hacky way to get the account address and creation number from the event key.
         // The root problem here is that the move-cli is using the Diem-specific event format.
         // We will deal this later when we make events more generic in the Move VM.
@@ -126,6 +143,10 @@ impl OnDiskStateView {
     }
 
     fn get_module_path(&self, module_id: &ModuleId) -> PathBuf {
+        println!(
+            "++++++++++++++++++++++++++++++++++ [get_module_path] module_id:{:?}",
+            &module_id
+        );
         let mut path = self.get_addr_path(module_id.address());
         path.push(MODULES_DIR);
         path.push(module_id.name().to_string());
@@ -134,6 +155,10 @@ impl OnDiskStateView {
 
     /// Extract a module ID from a path
     pub fn get_module_id(&self, p: &Path) -> Option<ModuleId> {
+        println!(
+            "++++++++++++++++++++++++++++++++++ [get_module_id] p:{:?}",
+            &p
+        );
         if !self.is_module_path(p) {
             return None;
         }
@@ -155,12 +180,37 @@ impl OnDiskStateView {
         addr: AccountAddress,
         tag: StructTag,
     ) -> Result<Option<Vec<u8>>> {
-        Self::get_bytes(&self.get_resource_path(addr, tag))
+        let path = self.get_resource_path(addr, tag.clone());
+        let code = Self::get_bytes(&path);
+        println!(
+            "get_resource_bytes addr={:?}, tag={:?}, path={:?}\
+            \n[RES-CODE]\n------------------------------------------------------------------------\n{:?}",
+            &addr, &tag, &path, &code
+        );
+        code
     }
 
     /// Read the resource bytes stored on-disk at `addr`/`tag`
     fn get_module_bytes(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>> {
-        Self::get_bytes(&self.get_module_path(module_id))
+        let path = self.get_module_path(module_id);
+        let code = Self::get_bytes(&path);
+        match &code {
+            Ok(ccc) => match &ccc {
+                Some(bytecode) => {
+                    let module = CompiledModule::deserialize(&bytecode)
+                        .map_err(|e| anyhow!("Error deserializing module: {:?}", e))?;
+                    println!(
+                        "get_module_bytes module_id={:?}, path={:?}\
+                        \n[MOD-CODE]\n------------------------------------------------------------------------\n{:?}\
+                        \n[MOD-INFO]\n------------------------------------------------------------------------\n{:?}",
+                        &module_id, &path, &bytecode, &module
+                    );
+                }
+                None => {}
+            },
+            _ => {}
+        }
+        code
     }
 
     /// Check if a module at `addr`/`module_id` exists
@@ -170,6 +220,10 @@ impl OnDiskStateView {
 
     /// Return the name of the function at `idx` in `module_id`
     pub fn resolve_function(&self, module_id: &ModuleId, idx: u16) -> Result<Option<Identifier>> {
+        println!(
+            "++++++++++++++++++++++++++++++++++ [resolve_function] module_id:{:?}, idx:{:?}",
+            &module_id, &idx
+        );
         if let Some(m) = self.get_module_by_id(module_id)? {
             Ok(Some(
                 m.identifier_at(
@@ -194,6 +248,10 @@ impl OnDiskStateView {
     /// Returns a deserialized representation of the resource value stored at `resource_path`.
     /// Returns Err if the path does not hold a resource value or the resource cannot be deserialized
     pub fn view_resource(&self, resource_path: &Path) -> Result<Option<AnnotatedMoveStruct>> {
+        println!(
+            "++++++++++++++++++++++++++++++++++ [view_resource] resource_path:{:?}",
+            &resource_path
+        );
         if resource_path.is_dir() {
             bail!(
                 "Bad resource path {:?}. Needed file, found directory",
@@ -221,6 +279,10 @@ impl OnDiskStateView {
     }
 
     fn get_events(&self, events_path: &Path) -> Result<Vec<Event>> {
+        println!(
+            "++++++++++++++++++++++++++++++++++ [get_events] events_path:{:?}",
+            &events_path
+        );
         Ok(if events_path.exists() {
             match Self::get_bytes(events_path)? {
                 Some(events_data) => bcs::from_bytes::<Vec<Event>>(&events_data)?,
@@ -232,6 +294,10 @@ impl OnDiskStateView {
     }
 
     pub fn view_events(&self, events_path: &Path) -> Result<Vec<AnnotatedMoveValue>> {
+        println!(
+            "++++++++++++++++++++++++++++++++++ [view_events] events_path:{:?}",
+            &events_path
+        );
         let annotator = MoveValueAnnotator::new(self);
         self.get_events(events_path)?
             .iter()
@@ -240,6 +306,10 @@ impl OnDiskStateView {
     }
 
     fn view_bytecode(path: &Path, is_module: bool) -> Result<Option<String>> {
+        println!(
+            "++++++++++++++++++++++++++++++++++ [view_bytecode] path:{:?}, is_module:{:?}",
+            &path, &is_module
+        );
         if path.is_dir() {
             bail!("Bad bytecode path {:?}. Needed file, found directory", path)
         }
@@ -276,6 +346,10 @@ impl OnDiskStateView {
 
     /// Delete resource stored on disk at the path `addr`/`tag`
     pub fn delete_resource(&self, addr: AccountAddress, tag: StructTag) -> Result<()> {
+        println!(
+            "++++++++++++++++++++++++++++++++++ [delete_resource] addr:{:?}, tag:{:?}",
+            &addr, &tag
+        );
         let path = self.get_resource_path(addr, tag);
         fs::remove_file(path)?;
 
@@ -293,6 +367,7 @@ impl OnDiskStateView {
         tag: StructTag,
         bcs_bytes: &[u8],
     ) -> Result<()> {
+        println!("++++++++++++++++++++++++++++++++++ [save_resource] addr:{:?}, tag:{:?}, bcs_bytes:{:?}", &addr, &tag, &bcs_bytes);
         let path = self.get_resource_path(addr, tag);
         if !path.exists() {
             fs::create_dir_all(path.parent().unwrap())?;
@@ -307,6 +382,7 @@ impl OnDiskStateView {
         event_type: TypeTag,
         event_data: Vec<u8>,
     ) -> Result<()> {
+        println!("++++++++++++++++++++++++++++++++++ [save_event] event_key:{:?}, event_sequence_number:{:?}, event_type:{:?}", &event_key, &event_sequence_number, &event_type);
         // save event data in handle_address/EVENTS_DIR/handle_number
         let path = self.get_event_path(event_key);
         if !path.exists() {
@@ -325,6 +401,7 @@ impl OnDiskStateView {
 
     /// Save `module` on disk under the path `module.address()`/`module.name()`
     pub fn save_module(&self, module_id: &ModuleId, module_bytes: &[u8]) -> Result<()> {
+        println!("++++++++++++++++++++++++++++++++++ [save_module] module_id:{:?}, module_bytes_len:{:?}", &module_id, &module_bytes.len());
         let path = self.get_module_path(module_id);
         if !path.exists() {
             fs::create_dir_all(path.parent().unwrap())?
@@ -334,6 +411,7 @@ impl OnDiskStateView {
 
     /// Save the YAML encoding `layout` on disk under `build_dir/layouts/id`.
     pub fn save_struct_layouts(&self, layouts: &str) -> Result<()> {
+        println!("++++++++++++++++++++++++++++++++++ [save_struct_layouts] layouts:{:?}", &layouts);
         let layouts_file = self.struct_layouts_file();
         if !layouts_file.exists() {
             fs::create_dir_all(layouts_file.parent().unwrap())?
@@ -346,6 +424,7 @@ impl OnDiskStateView {
         &self,
         modules: impl IntoIterator<Item = &'a (ModuleId, Vec<u8>)>,
     ) -> Result<()> {
+        println!("++++++++++++++++++++++++++++++++++ [save_modules]");
         for (module_id, module_bytes) in modules {
             self.save_module(module_id, module_bytes)?;
         }
@@ -353,6 +432,7 @@ impl OnDiskStateView {
     }
 
     pub fn delete_module(&self, id: &ModuleId) -> Result<()> {
+        println!("++++++++++++++++++++++++++++++++++ [delete_module] id:{:?}", &id);
         let path = self.get_module_path(id);
         fs::remove_file(path)?;
 

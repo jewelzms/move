@@ -124,6 +124,7 @@ pub fn program(
 ) -> Vec<AnnotatedCompiledUnit> {
     let mut units = vec![];
 
+    // println!("program prog:\n---------------------------------------------------------\n{:?}", &prog);
     let (orderings, sdecls, fdecls) = extract_decls(compilation_env, pre_compiled_lib, &prog);
     let G::Program {
         modules: gmodules,
@@ -134,6 +135,7 @@ pub fn program(
         .into_iter()
         .filter(|(_, mdef)| mdef.is_source_module)
         .collect::<Vec<_>>();
+    // println!("program source_modules:\n---------------------------------------------------------\n{:?}", &source_modules);
     source_modules.sort_by_key(|(_, mdef)| mdef.dependency_order);
     for (m, mdef) in source_modules {
         if let Some(unit) = module(compilation_env, m, mdef, &orderings, &sdecls, &fdecls) {
@@ -180,6 +182,7 @@ fn module(
         (BTreeSet<(ModuleIdent, StructName)>, IR::FunctionSignature),
     >,
 ) -> Option<AnnotatedCompiledUnit> {
+    //println!("module \n------------------------------\n{:?}", &mdef);
     let mut context = Context::new(compilation_env, Some(&ident));
     let structs = mdef
         .structs
@@ -559,6 +562,8 @@ fn function(
         acquires,
         body,
     } = fdef;
+    // println!("function +++++++++      fdef.entry:{:?}", fdef.entry);
+    // println!("function +++++++++ fdef.visibility:{:?}", fdef.visibility);
     let v = visibility(v);
     let parameters = signature.parameters.clone();
     let signature = function_signature(context, signature);

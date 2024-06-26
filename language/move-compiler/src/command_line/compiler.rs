@@ -44,6 +44,7 @@ pub struct Compiler<'a> {
     flags: Flags,
 }
 
+#[derive(Debug)]
 pub struct SteppedCompiler<'a, const P: Pass> {
     compilation_env: CompilationEnv,
     pre_compiled_lib: Option<&'a FullyCompiledProgram>,
@@ -71,7 +72,7 @@ enum PassResult {
     Compilation(Vec<AnnotatedCompiledUnit>, /* warnings */ Diagnostics),
 }
 
-#[derive(Clone)]
+#[derive(Clone,Debug)]
 pub struct FullyCompiledProgram {
     // TODO don't store this...
     pub files: FilesSourceText,
@@ -242,9 +243,13 @@ impl<'a> Compiler<'a> {
         Result<(Vec<AnnotatedCompiledUnit>, Diagnostics), Diagnostics>,
     )> {
         let (files, res) = self.run::<PASS_COMPILATION>()?;
+        //println!("build files======:{:?}", &files);
         Ok((
             files,
-            res.map(|(_comments, stepped)| stepped.into_compiled_units()),
+            res.map(|(_comments, stepped)| {
+                // println!("build _comments======:{:?}, stepped:{:?}", &_comments, &stepped);
+                stepped.into_compiled_units()
+            }),
         ))
     }
 

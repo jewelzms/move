@@ -470,6 +470,8 @@ impl ModuleCache {
         func_name: &IdentStr,
         module_id: &ModuleId,
     ) -> PartialVMResult<usize> {
+        // println!("resolve_function_by_name module_id:{} func_name:{} module:\n-------------------------------------\n{:?}",
+        //     module_id, func_name, self.modules.get(module_id));
         match self
             .modules
             .get(module_id)
@@ -1943,6 +1945,8 @@ impl Module {
                 if module_id == id {
                     // module has not been published yet, loop through the functions
                     for (idx, function) in cache.functions.iter().enumerate().rev() {
+                        // println!("Module create module_id:{} function.module_id():{:?}",
+                        // module_id, function.module_id());
                         if function.module_id() != Some(&module_id) {
                             return Err(PartialVMError::new(
                                 StatusCode::FUNCTION_RESOLUTION_FAILURE,

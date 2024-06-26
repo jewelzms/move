@@ -1893,6 +1893,7 @@ fn parse_function_decl(
     } else {
         false
     };
+    // println!("+++++++++ parse_function_decl +++++++++ is_entry:{}", is_entry);
 
     let (name, type_parameters) = parse_name_and_type_parameters(tokens, parse_type_parameter)?;
     consume_token(tokens, Tok::LParen)?;

@@ -615,6 +615,7 @@ impl CompiledPackage {
                 source_path,
             };
             if package_name == root_package_name {
+                // println!("build_all unit... package_name:{}, {:?}", &package_name, &unit);
                 root_compiled_units.push(unit)
             } else {
                 deps_compiled_units.push((package_name, unit))

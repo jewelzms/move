@@ -82,6 +82,7 @@ pub(crate) fn parse_program(
             named_address_map,
             def,
         }));
+        // println!("source_definitions::::::::::::::::\n----------------------------{:?}", &source_definitions);
         source_comments.insert(file_hash, comments);
         diags.extend(ds);
     }
@@ -118,6 +119,9 @@ pub(crate) fn parse_program(
         attr_derivation::derive_from_attributes(compilation_env, named_address_maps.get(*idx), def);
     }
 
+    // println!("named_address_maps::::::::::::::::\n----------------------------{:?}", &named_address_maps);
+    // println!("source_definitions::::::::::::::::\n----------------------------{:?}", &source_definitions);
+    // println!("lib_definitions::::::::::::::::\n----------------------------{:?}", &lib_definitions);
     let res = if diags.is_empty() {
         let pprog = parser::ast::Program {
             named_address_maps,

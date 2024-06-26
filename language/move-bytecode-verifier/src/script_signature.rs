@@ -80,7 +80,9 @@ pub fn verify_module_function_signature_by_name(
     check_signature: FnCheckScriptSignature,
 ) -> VMResult<()> {
     let fdef_opt = module.function_defs().iter().enumerate().find(|(_, fdef)| {
-        module.identifier_at(module.function_handle_at(fdef.function).name) == name
+        let ident = module.identifier_at(module.function_handle_at(fdef.function).name);
+        // println!("[verify_module_function_signature_by_name] ident:{}, name:{}", ident, name);
+        ident == name
     });
     let (idx, _fdef) = fdef_opt.ok_or_else(|| {
         PartialVMError::new(StatusCode::VERIFICATION_ERROR)
@@ -102,6 +104,7 @@ fn verify_module_function_signature(
     check_signature: FnCheckScriptSignature,
 ) -> VMResult<()> {
     let fdef = module.function_def_at(idx);
+    // println!("[verify_module_function_signature] idx:{}, fdef:{:?}, module:\n--------------------------------------------------------\n{:?}", idx, fdef, module);
 
     let resolver = &BinaryIndexedView::Module(module);
     let fhandle = module.function_handle_at(fdef.function);

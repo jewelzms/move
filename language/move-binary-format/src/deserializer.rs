@@ -1374,6 +1374,7 @@ fn load_function_def(cursor: &mut VersionedCursor) -> BinaryLoaderResult<Functio
             PartialVMError::new(StatusCode::MALFORMED).with_message("Unexpected EOF".to_string())
         })?;
         let is_entry = (extra_flags & FunctionDefinition::ENTRY) != 0;
+        // println!("+++++++++ load_function_def +++++++++ is_entry:{}", is_entry);
         if is_entry {
             extra_flags ^= FunctionDefinition::ENTRY;
         }
