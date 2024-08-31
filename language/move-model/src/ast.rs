@@ -1107,7 +1107,8 @@ impl ModuleName {
     /// for pseudo modules created from scripts, so use this address to check.
     pub fn is_script(&self) -> bool {
         static MAX_ADDR: Lazy<BigUint> = Lazy::new(|| {
-            BigUint::from_str_radix("ffffffffffffffffffffffffffffffff", 16).expect("valid hex")
+            use move_core_types::account_address::AccountAddress;
+            BigUint::from_bytes_be(&[0xff; AccountAddress::LENGTH].to_vec())
         });
         self.0 == *MAX_ADDR
     }
