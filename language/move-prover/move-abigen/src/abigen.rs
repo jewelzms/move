@@ -229,10 +229,8 @@ impl<'env> Abigen<'env> {
     fn load_compiled_bytes(&self, module_env: &ModuleEnv<'env>) -> anyhow::Result<Vec<u8>> {
         match &self.options.in_memory_bytes {
             Some(map) => {
-                Some(map) => {
-                    let name = module_env.get_full_name_str();
-                    Ok(map.get(&name).unwrap().clone())
-                }
+                let name = module_env.get_full_name_str();
+                Ok(map.get(&name).unwrap().clone())
             }
             None => {
                 let mut path = PathBuf::from(&self.options.compiled_script_directory);
